@@ -1,0 +1,301 @@
+
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz Maker</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;padding:14px;
+  background:#06152f;color:white;
+  font-family:Arial,sans-serif
+}
+header{text-align:center;padding:15px}
+header h1{color:#ffd633;font-size:34px;margin:5px}
+header h1 span{color:#ff65cf}
+.panel{
+  max-width:850px;margin:12px auto;
+  background:#0b2347;border:1px solid #1678c9;
+  padding:16px;border-radius:16px
+}
+h2{color:#ffd633}
+label{display:block;margin:13px 0 6px;font-weight:bold}
+input,textarea,select{
+  width:100%;padding:12px;border-radius:9px;
+  border:1px solid #278bd7;background:#06152f;
+  color:white;font-size:16px
+}
+textarea{min-height:85px}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button{
+  padding:12px;border:0;border-radius:9px;
+  background:#087bff;color:white;font-weight:bold;
+  font-size:15px;margin:5px 3px;cursor:pointer
+}
+.green{background:#00a66b}
+.pink{background:#d92da6}
+.preview{max-width:850px;margin:auto}
+canvas{width:100%;height:auto;border-radius:12px}
+.note{color:#b9d9ff;font-size:13px}
+@media(max-width:480px){
+  .options{grid-template-columns:1fr}
+  body{padding:8px}
+}
+</style>
+</head>
+
+<body>
+<header>
+  <h1>QUIZ <span>MAKER</span></h1>
+  <p>अपना क्विज़ बनाओ • PNG डाउनलोड करो</p>
+</header>
+
+<section class="panel">
+<h2>✏️ क्विज़ एडिटर</h2>
+
+<label>क्विज़ का नाम</label>
+<input id="title" value="सामान्य ज्ञान">
+
+<label>अपना प्रश्न लिखें</label>
+<textarea id="question">भारत की राजधानी क्या है?</textarea>
+
+<label>चार विकल्प लिखें</label>
+<div class="options">
+<input id="a" value="मुंबई" placeholder="विकल्प A">
+<input id="b" value="दिल्ली" placeholder="विकल्प B">
+<input id="c" value="कोलकाता" placeholder="विकल्प C">
+<input id="d" value="चेन्नई" placeholder="विकल्प D">
+</div>
+
+<label>सही उत्तर चुनें</label>
+<select id="correct">
+<option value="0">A</option>
+<option value="1" selected>B</option>
+<option value="2">C</option>
+<option value="3">D</option>
+</select>
+
+<label>📷 Gallery से फोटो चुनें</label>
+<input type="file" id="photo" accept="image/*">
+
+<p class="note">PNG या JPG फोटो चुन सकते हो।</p>
+
+<button onclick="drawQuiz()">Preview अपडेट</button>
+<button class="green" onclick="downloadPNG()">PNG डाउनलोड</button>
+<button class="pink" onclick="saveQuiz()">क्विज़ सेव</button>
+<button onclick="document.getElementById('load').click()">क्विज़ खोलें</button>
+<input id="load" type="file" accept=".json,application/json" hidden>
+
+<p id="status" class="note"></p>
+</section>
+
+<section class="preview">
+<h2>🖼️ 16:9 PNG Preview</h2>
+<canvas id="canvas" width="1600" height="900"></canvas>
+<p class="note">PNG का आकार 1600 × 900 पिक्सेल है।</p>
+</section>
+
+<script>
+const $ = id => document.getElementById(id);
+let image = null;
+
+$('photo').addEventListener('change', function(){
+  const file = this.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(){
+    const img = new Image();
+    img.onload = function(){
+      image = img;
+      drawQuiz();
+      $('status').textContent = 'फोटो जोड़ दी गई!';
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+function roundRect(ctx,x,y,w,h,r,color){
+  ctx.beginPath();
+  ctx.roundRect(x,y,w,h,r);
+  ctx.fillStyle=color;
+  ctx.fill();
+}
+
+function fitImage(ctx,img,x,y,w,h){
+  const scale=Math.max(w/img.width,h/img.height);
+  const sw=w/scale, sh=h/scale;
+  ctx.drawImage(
+    img,
+    (img.width-sw)/2,(img.height-sh)/2,sw,sh,
+    x,y,w,h
+  );
+}
+
+function drawQuiz(){
+  const canvas=$('canvas');
+  const ctx=canvas.getContext('2d');
+  const W=1600,H=900;
+
+  const bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#06132e');
+  bg.addColorStop(1,'#123e75');
+  ctx.fillStyle=bg;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.strokeStyle='#159cff';
+  ctx.lineWidth=6;
+  ctx.strokeRect(12,12,W-24,H-24);
+
+  ctx.fillStyle='#ffd633';
+  ctx.font='bold 58px Arial';
+  ctx.fillText($('title').value || 'QUIZ MAKER',55,85);
+
+  ctx.fillStyle='#ff65cf';
+  ctx.font='bold 27px Arial';
+  ctx.fillText('LEARN • THINK • WIN',58,128);
+
+  roundRect(ctx,50,165,650,660,25,'#0a2348');
+
+  if(image){
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(65,180,620,630,20);
+    ctx.clip();
+    fitImage(ctx,image,65,180,620,630);
+    ctx.restore();
+  }else{
+    ctx.fillStyle='#17416d';
+    ctx.font='bold 36px Arial';
+    ctx.fillText('YOUR IMAGE',220,490);
+  }
+
+  roundRect(ctx,735,165,815,660,25,'#071b39');
+
+  ctx.fillStyle='#ffd633';
+  ctx.font='bold 39px Arial';
+  ctx.fillText('QUESTION',775,225);
+
+  ctx.fillStyle='white';
+  ctx.font='bold 38px Arial';
+
+  const question=$('question').value;
+  const words=question.split(/\s+/);
+  let line='', y=290, lines=0;
+
+  for(const word of words){
+    const test=line+word+' ';
+    if(ctx.measureText(test).width>710 && line){
+      ctx.fillText(line,775,y);
+      line=word+' ';
+      y+=48;
+      lines++;
+      if(lines>=2) break;
+    }else line=test;
+  }
+  if(lines<3 && line) ctx.fillText(line,775,y);
+
+  const values=[
+    $('a').value,$('b').value,
+    $('c').value,$('d').value
+  ];
+  const correct=Number($('correct').value);
+  const colors=['#167bff','#a13bdf','#e77a19','#db3974'];
+
+  values.forEach((value,i)=>{
+    const yy=420+i*91;
+    roundRect(ctx,770,yy,735,72,16,
+      i===correct?'#087650':'#10345c');
+
+    ctx.fillStyle=colors[i];
+    ctx.beginPath();
+    ctx.arc(810,yy+36,24,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle='white';
+    ctx.font='bold 25px Arial';
+    ctx.textAlign='center';
+    ctx.fillText('ABCD'[i],810,yy+45);
+    ctx.textAlign='left';
+
+    ctx.font='bold 29px Arial';
+    let text=value;
+    while(ctx.measureText(text).width>580 && text.length>3)
+      text=text.slice(0,-1);
+    if(text!==value) text+='…';
+    ctx.fillText(text,850,yy+45);
+
+    if(i===correct){
+      ctx.fillStyle='#53ffc0';
+      ctx.fillText('✓',1450,yy+45);
+    }
+  });
+
+  ctx.fillStyle='#8bdcff';
+  ctx.font='23px Arial';
+  ctx.fillText('QUIZ MAKER • 16:9',55,870);
+}
+
+function downloadPNG(){
+  drawQuiz();
+  const a=document.createElement('a');
+  a.download='Quiz-Maker.png';
+  a.href=$('canvas').toDataURL('image/png');
+  a.click();
+  $('status').textContent='PNG डाउनलोड शुरू हुआ।';
+}
+
+function quizData(){
+  return {
+    title:$('title').value,
+    question:$('question').value,
+    options:[$('a').value,$('b').value,$('c').value,$('d').value],
+    correct:Number($('correct').value)
+  };
+}
+
+function saveQuiz(){
+  const blob=new Blob(
+    [JSON.stringify(quizData(),null,2)],
+    {type:'application/json'}
+  );
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='My-Quiz.json';
+  a.click();
+  $('status').textContent='क्विज़ सेव हो रहा है।';
+}
+
+$('load').addEventListener('change',function(){
+  const file=this.files[0];
+  if(!file)return;
+
+  const reader=new FileReader();
+  reader.onload=function(){
+    try{
+      const data=JSON.parse(reader.result);
+      $('title').value=data.title||'';
+      $('question').value=data.question||'';
+      ['a','b','c','d'].forEach((id,i)=>{
+        $(id).value=(data.options||[])[i]||'';
+      });
+      $('correct').value=String(data.correct||0);
+      drawQuiz();
+      $('status').textContent='क्विज़ खोल लिया गया!';
+    }catch(e){
+      $('status').textContent='गलत JSON फ़ाइल है।';
+    }
+  };
+  reader.readAsText(file);
+  this.value='';
+});
+
+drawQuiz();
+</script>
+</body>
+</html>
