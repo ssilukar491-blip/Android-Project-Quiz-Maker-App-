@@ -1,0 +1,34 @@
+
+
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.example.quizmaker'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.example.quizmaker'
+        minSdk 23
+        targetSdk 35
+
+        versionCode 1
+        versionName '1.0'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+
+        debug {
+            debuggable true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+}
